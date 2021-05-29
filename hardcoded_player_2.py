@@ -15,8 +15,15 @@ post_headers = {'Content-Type': 'application/json'}
 # Tankın gitmesini istediğimiz lokasyonlar (x,y) listesi
 positions2go = [[110, 370],[320,370],[320,620],[680,620],[850,320]]
 
+# Rakip tankın pozisyonunu ekleyeceğiz
+# Ateş etmek için lazım olacak
+position2attack = [0,0]
+
 # Oyun boyunca sürekli yapmasını istediklerimiz
 while True:
+    # Ateş etmenin açık kalmadığına emin ol
+    f, m, r = 0, 0, 0
+
     # Oyundan veriyi çek 
     data = requests.get(get_url, headers=get_headers)
     # Veriyi JSON'dan kullanılabilir hale getir
@@ -38,25 +45,31 @@ while True:
             wanted_r_rad = math.atan2((positions2go[0][1] - current_y),(positions2go[0][0] - current_x))
             # PI ve -PI arasında bulduğun açıyı dereceye çevir.
             wanted_r = -((wanted_r_rad * 180) / math.pi)
-            # Doğru açıya 30 dereceden yakınsa ilerle
+            # Yeterince doğru açıdaysan dön
             if abs(current_r - wanted_r) <= 30:
                 m, r = 1, 0
-            # Açıya 30 dereceden fazla yaklaşana kadar dön.
+            # Açıya 30 dereceden fazla yaklaşana kadar dön
             else:
                 m, r = 0, 1
         # Listedeki lokasyona varınca bunu yap
         else:
             # varılan lokasyonu listeden çıkart
-            positions2go.pop(0)
-            m, r = 0, 0
+            positions2go.pop(0)    
     else:
         # Lokasyonlar listesi boşalınca bunu yap
-        m, r = 0, 0
-        print("ERROR: No position specified to go.")
-
-    # Ateş etme
-    f = 0
-
+        position2attack[0] = float(jsonData["tankB"]["x"])
+        position2attack[1] = float(jsonData["tankB"]["y"])
+        # atan matematik fonksiyonuyla dönmen gereken açıyı bul
+        wanted_r_rad = math.atan2((position2attack[1] - current_y),(position2attack[0] - current_x))
+        # PI ve -PI arasında bulduğun açıyı dereceye çevir.
+        wanted_r = -((wanted_r_rad * 180) / math.pi)
+        # Açıya 30 dereceden fazla yaklaşana kadar dön.
+        if abs(current_r - wanted_r) <= 30:
+            f = 1
+        # Doğru açıdasın ateş et
+        else:
+            m, r = 0, 1
+    
     # Veriyi göndermek için hazırla
     data = {"m": m, "r":r, "f":f}
     # JSON formatına dönüştür
